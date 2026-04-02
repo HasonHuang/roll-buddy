@@ -313,6 +313,42 @@
       margin-bottom: 0.25rem;
     }
 
+    /* Stats Min Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .stat-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .stat-filter label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .stat-filter input {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .stat-filter input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
     /* Toggle */
     .toggle-group {
       display: flex;
@@ -560,7 +596,7 @@
   <div class="app">
     <header>
       <h1>Claude Code Buddy Configurator</h1>
-      <p class="subtitle">可视化配置你的 Claude Code Buddy 角色生成器</p>
+      <p class="subtitle">可视化生成你的 Claude Code Buddy</p>
     </header>
 
     <div class="main-grid">
@@ -603,6 +639,12 @@
             <button class="toggle-btn" data-value="true">是 ✨</button>
             <button class="toggle-btn" data-value="false">否</button>
           </div>
+        </div>
+
+        <!-- Stats Minimum -->
+        <div class="config-section">
+          <div class="section-label">最低属性 (Stats Min)</div>
+          <div class="stats-grid" id="statsGrid"></div>
         </div>
       </div>
 
@@ -705,7 +747,7 @@
   <script>
     // Buddy roll constants
     const SPECIES = ['duck', 'goose', 'blob', 'cat', 'dragon', 'octopus', 'owl', 'penguin', 'turtle', 'snail', 'ghost', 'axolotl', 'capybara', 'cactus', 'robot', 'rabbit', 'mushroom', 'chonk'];
-    const SPECIES_EMOJI = { duck: '🦆', goose: '🪿', blob: '🫧', cat: '🐱', dragon: '🐉', octopus: '🐙', owl: '🦉', penguin: '🐧', turtle: '🐢', snail: '🐌', ghost: '👻', axolotl: '🦎', capybara: '🦫', cactus: '🌵', robot: '🤖', rabbit: '🐰', mushroom: '🍄', chonk: '😸' };
+    const SPECIES_EMOJI = { duck: '🦆', goose: '🦢', blob: '⭕', cat: '🐱', dragon: '🐉', octopus: '🐙', owl: '🦉', penguin: '🐧', turtle: '🐢', snail: '🐌', ghost: '👻', axolotl: '🦎', capybara: '🦦', cactus: '🌵', robot: '🤖', rabbit: '🐰', mushroom: '🍄', chonk: '😸' };
 
     const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
     const RARITY_WEIGHTS = { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 };
@@ -735,6 +777,7 @@
       eye: null,
       hat: null,
       shiny: 'any',
+      statsMin: Object.fromEntries(STAT_NAMES.map(name => [name, null])),
       mode: 'random',
       hashAlgorithm: 'bun'
     };
@@ -808,6 +851,32 @@
       });
       document.querySelector('#shinyGroup .toggle-btn').classList.add('selected');
 
+      // Stats minimum inputs
+      const statsGrid = document.getElementById('statsGrid');
+      STAT_NAMES.forEach(name => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'stat-filter';
+
+        const label = document.createElement('label');
+        label.setAttribute('for', `statMin_${name}`);
+        label.textContent = name;
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = `statMin_${name}`;
+        input.min = '0';
+        input.max = '100';
+        input.placeholder = '任意';
+        input.addEventListener('input', () => {
+          const value = input.value.trim();
+          state.statsMin[name] = value === '' ? null : Number(value);
+        });
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        statsGrid.appendChild(wrapper);
+      });
+
       // Hash algorithm toggle
       document.querySelectorAll('#hashAlgorithmGroup .toggle-btn').forEach(btn => {
         btn.onclick = () => {
@@ -843,11 +912,22 @@
     }
 
     // Validation
+    function hasStatsMinFilter() {
+      return Object.values(state.statsMin).some(value => value != null);
+    }
+
     function validateOptions() {
       const errors = [];
 
-      if (!state.species && !state.rarity && !state.eye && !state.hat && state.shiny === 'any') {
-        errors.push('请至少选择一个筛选条件（物种/稀有度/眼睛/帽子/闪光）');
+      if (!state.species && !state.rarity && !state.eye && !state.hat && state.shiny === 'any' && !hasStatsMinFilter()) {
+        errors.push('请至少选择一个筛选条件（物种/稀有度/眼睛/帽子/闪光/最低属性）');
+      }
+
+      for (const [name, value] of Object.entries(state.statsMin)) {
+        if (value == null) continue;
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          errors.push(`${name} 的最低值必须在 0 到 100 之间`);
+        }
       }
 
       return errors;
@@ -1146,6 +1226,13 @@
       // Check shiny filter
       if (state.shiny !== 'any' && bones.shiny !== (state.shiny === 'true')) {
         return false;
+      }
+      // Check stats minimum filters
+      for (const [name, minValue] of Object.entries(state.statsMin)) {
+        if (minValue == null) continue;
+        if (bones.stats[name] < minValue) {
+          return false;
+        }
       }
       return true;
     }
