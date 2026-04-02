@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code Buddy Configurator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #f8f9fc;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f0f4f8;
+      --border: #e2e8f0;
+      --border-hover: #cbd5e1;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-glow: rgba(99, 102, 241, 0.2);
+      --common: #64748b;
+      --uncommon: #22c55e;
+      --rare: #3b82f6;
+      --epic: #a855f7;
+      --legendary: #f59e0b;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-top: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent) 0%, #a855f7 50%, var(--legendary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-glow);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .config-section {
+      margin-bottom: 1rem;
+    }
+
+    .config-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Species Grid */
+    .species-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .species-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .species-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    .species-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .species-btn .emoji {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Rarity Pills */
+    .rarity-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .rarity-pill {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      border: 1px solid;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: transparent;
+    }
+
+    .rarity-pill[data-rarity="common"] {
+      border-color: var(--common);
+      color: var(--common);
+    }
+    .rarity-pill[data-rarity="uncommon"] {
+      border-color: var(--uncommon);
+      color: var(--uncommon);
+    }
+    .rarity-pill[data-rarity="rare"] {
+      border-color: var(--rare);
+      color: var(--rare);
+    }
+    .rarity-pill[data-rarity="epic"] {
+      border-color: var(--epic);
+      color: var(--epic);
+    }
+    .rarity-pill[data-rarity="legendary"] {
+      border-color: var(--legendary);
+      color: var(--legendary);
+    }
+
+    .rarity-pill:hover {
+      transform: scale(1.05);
+    }
+
+    .rarity-pill.selected[data-rarity="common"] {
+      background: var(--common);
+      color: white;
+      box-shadow: 0 2px 8px rgba(100, 116, 139, 0.4);
+    }
+    .rarity-pill.selected[data-rarity="uncommon"] {
+      background: var(--uncommon);
+      color: white;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    }
+    .rarity-pill.selected[data-rarity="rare"] {
+      background: var(--rare);
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+    .rarity-pill.selected[data-rarity="epic"] {
+      background: var(--epic);
+      color: white;
+      box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+    }
+    .rarity-pill.selected[data-rarity="legendary"] {
+      background: var(--legendary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Eye Selection */
+    .icon-grid {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: scale(1.05);
+    }
+
+    .icon-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    /* Hat Grid */
+    .hat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .hat-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .hat-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    .hat-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .hat-btn .emoji {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Toggle */
+    .toggle-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .toggle-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    /* Mode Selection */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .mode-card {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .mode-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .mode-card.selected {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .mode-card .icon {
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .mode-card .label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.125rem;
+    }
+
+    .mode-card .desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Number Input */
+    .number-input {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .number-input input {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .number-input input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .number-input label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      min-width: 80px;
+    }
+
+    /* Run Panel */
+    .run-panel {
+      margin-top: 1rem;
+    }
+
+    .run-btn {
+      width: 100%;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .run-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .run-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Output */
+    .output-area {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      min-height: 250px;
+      max-height: 350px;
+      overflow: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .output-area:empty::before {
+      content: 'Waiting for results...';
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .output-line {
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .output-line:last-child {
+      border-bottom: none;
+    }
+
+    .output-success {
+      color: var(--success);
+    }
+
+    .output-error {
+      color: var(--error);
+    }
+
+    .attempts-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+
+    .copy-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.25rem 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    /* Spinning animation */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Clear button */
+    .clear-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .clear-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    .panel-header-actions {
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Claude Code Buddy Configurator</h1>
+      <p class="subtitle">可视化配置你的 Claude Code Buddy 角色生成器</p>
+    </header>
+
+    <div class="main-grid">
+      <!-- Left Panel: Filters -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">🎯</div>
+          <h2 class="panel-title">筛选条件</h2>
+        </div>
+
+        <!-- Species -->
+        <div class="config-section">
+          <div class="section-label">物种 (Species)</div>
+          <div class="species-grid" id="speciesGrid"></div>
+        </div>
+
+        <!-- Rarity -->
+        <div class="config-section">
+          <div class="section-label">稀有度 (Rarity)</div>
+          <div class="rarity-row" id="rarityRow"></div>
+        </div>
+
+        <!-- Eye -->
+        <div class="config-section">
+          <div class="section-label">眼睛 (Eye)</div>
+          <div class="icon-grid" id="eyeGrid"></div>
+        </div>
+
+        <!-- Hat -->
+        <div class="config-section">
+          <div class="section-label">帽子 (Hat)</div>
+          <div class="hat-grid" id="hatGrid"></div>
+        </div>
+
+        <!-- Shiny -->
+        <div class="config-section">
+          <div class="section-label">闪光 (Shiny)</div>
+          <div class="toggle-group" id="shinyGroup">
+            <button class="toggle-btn" data-value="any">任意</button>
+            <button class="toggle-btn" data-value="true">是 ✨</button>
+            <button class="toggle-btn" data-value="false">否</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Settings -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">⚙️</div>
+          <h2 class="panel-title">运行设置</h2>
+          <div class="panel-header-actions">
+            <button class="clear-btn" onclick="clearOutput()">清空</button>
+          </div>
+        </div>
+
+        <!-- Mode -->
+        <div class="config-section">
+          <div class="section-label">模式 (Mode)</div>
+          <div class="mode-cards" id="modeCards">
+            <div class="mode-card selected" data-mode="random">
+              <div class="icon">🎲</div>
+              <div class="label">随机</div>
+              <div class="desc">随机生成用户ID</div>
+            </div>
+            <div class="mode-card" data-mode="sequential">
+              <div class="icon">🔢</div>
+              <div class="label">顺序</div>
+              <div class="desc">按前缀+索引生成</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sequential Settings -->
+        <div id="sequentialSettings" style="display: none;">
+          <div class="config-section">
+            <div class="section-label">前缀 (Prefix)</div>
+            <div class="number-input">
+              <input type="text" id="prefixInput" placeholder="user-" value="user-">
+            </div>
+          </div>
+          <div class="config-section">
+            <div class="section-label">起始索引 (Start)</div>
+            <div class="number-input">
+              <input type="number" id="startInput" value="0" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Hash Algorithm -->
+        <div class="config-section">
+          <div class="section-label">哈希算法 (Hash)</div>
+          <div class="toggle-group" id="hashAlgorithmGroup">
+            <button class="toggle-btn" data-value="bun">Bun / Wyhash</button>
+            <button class="toggle-btn" data-value="fnv">Legacy / FNV-1a</button>
+          </div>
+        </div>
+
+        <!-- Bytes -->
+        <div class="config-section">
+          <div class="section-label">随机字节长度 (Bytes)</div>
+          <div class="number-input">
+            <input type="number" id="bytesInput" value="32" min="1" max="64">
+            <label>bytes</label>
+          </div>
+        </div>
+
+        <!-- Limit -->
+        <div class="config-section">
+          <div class="section-label">最大尝试次数 (Limit)</div>
+          <div class="number-input">
+            <input type="number" id="limitInput" value="5000000" min="1">
+            <label>次</label>
+          </div>
+        </div>
+
+        <!-- Count -->
+        <div class="config-section">
+          <div class="section-label">返回数量 (Count)</div>
+          <div class="number-input">
+            <input type="number" id="countInput" value="1" min="1" max="100">
+            <label>个</label>
+          </div>
+        </div>
+
+        <!-- Run Button -->
+        <div class="config-section run-panel">
+          <button class="run-btn" id="runBtn" onclick="runSearch()">
+            <span>🚀</span>
+            <span>开始搜索</span>
+          </button>
+        </div>
+
+        <!-- Output -->
+        <div class="config-section">
+          <div class="section-label">结果 (Results)</div>
+          <div class="output-area" id="outputArea"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Buddy roll constants
+    const SPECIES = ['duck', 'goose', 'blob', 'cat', 'dragon', 'octopus', 'owl', 'penguin', 'turtle', 'snail', 'ghost', 'axolotl', 'capybara', 'cactus', 'robot', 'rabbit', 'mushroom', 'chonk'];
+    const SPECIES_EMOJI = { duck: '🦆', goose: '🪿', blob: '🫧', cat: '🐱', dragon: '🐉', octopus: '🐙', owl: '🦉', penguin: '🐧', turtle: '🐢', snail: '🐌', ghost: '👻', axolotl: '🦎', capybara: '🦫', cactus: '🌵', robot: '🤖', rabbit: '🐰', mushroom: '🍄', chonk: '😸' };
+
+    const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+    const RARITY_WEIGHTS = { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 };
+
+    const EYES = ['·', '✦', '×', '◉', '@', '°'];
+    const HATS = ['none', 'crown', 'tophat', 'propeller', 'halo', 'wizard', 'beanie', 'tinyduck'];
+
+    const STAT_NAMES = ['DEBUGGING', 'PATIENCE', 'CHAOS', 'WISDOM', 'SNARK'];
+    const SALT = 'friend-2026-401';
+    const UINT64_MASK = (1n << 64n) - 1n;
+    const WYHASH_SECRET = [
+      0xa0761d6478bd642fn,
+      0xe7037ed1a0b428dbn,
+      0x8ebc6af09c88c6e3n,
+      0x589965cc75374cc3n
+    ];
+    const textEncoder = new TextEncoder();
+    const BUN_HASH_SELF_TESTS = [
+      { input: 'some data here', seed: 0n, expected: 11562320457524636935n },
+      { input: 'some data here', seed: 1234n, expected: 15724820720172937558n }
+    ];
+
+    // State
+    const state = {
+      species: null,
+      rarity: 'legendary',
+      eye: null,
+      hat: null,
+      shiny: 'any',
+      mode: 'random',
+      hashAlgorithm: 'bun'
+    };
+
+    // Initialize UI
+    function initUI() {
+      // Species grid
+      const speciesGrid = document.getElementById('speciesGrid');
+      SPECIES.forEach(species => {
+        const btn = document.createElement('button');
+        btn.className = 'species-btn';
+        btn.dataset.species = species;
+        btn.innerHTML = `<span class="emoji">${SPECIES_EMOJI[species]}</span>${species}`;
+        btn.onclick = () => toggleSelection('species', species, btn);
+        speciesGrid.appendChild(btn);
+      });
+
+      // Rarity row - default to legendary
+      const rarityRow = document.getElementById('rarityRow');
+      RARITIES.forEach(rarity => {
+        const pill = document.createElement('button');
+        pill.className = 'rarity-pill';
+        pill.dataset.rarity = rarity;
+        pill.textContent = rarity.charAt(0).toUpperCase() + rarity.slice(1);
+        pill.onclick = () => toggleSelection('rarity', rarity, pill);
+        if (rarity === 'legendary') {
+          pill.classList.add('selected');
+        }
+        rarityRow.appendChild(pill);
+      });
+
+      // Eye grid
+      const eyeGrid = document.getElementById('eyeGrid');
+      EYES.forEach(eye => {
+        const btn = document.createElement('button');
+        btn.className = 'icon-btn';
+        btn.dataset.eye = eye;
+        btn.textContent = eye;
+        btn.onclick = () => toggleSelection('eye', eye, btn);
+        eyeGrid.appendChild(btn);
+      });
+
+      // Hat grid
+      const HAT_EMOJI = {
+        none: '🚫',
+        crown: '👑',
+        tophat: '🎩',
+        propeller: '🌀',
+        halo: '😇',
+        wizard: '🧙',
+        beanie: '🎿',
+        tinyduck: '🦆'
+      };
+      const hatGrid = document.getElementById('hatGrid');
+      HATS.forEach(hat => {
+        const btn = document.createElement('button');
+        btn.className = 'hat-btn';
+        btn.dataset.hat = hat;
+        btn.innerHTML = `<span class="emoji">${HAT_EMOJI[hat]}</span>${hat}`;
+        btn.onclick = () => toggleSelection('hat', hat, btn);
+        hatGrid.appendChild(btn);
+      });
+
+      // Shiny toggle
+      document.querySelectorAll('#shinyGroup .toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('#shinyGroup .toggle-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          state.shiny = btn.dataset.value;
+        };
+      });
+      document.querySelector('#shinyGroup .toggle-btn').classList.add('selected');
+
+      // Hash algorithm toggle
+      document.querySelectorAll('#hashAlgorithmGroup .toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('#hashAlgorithmGroup .toggle-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          state.hashAlgorithm = btn.dataset.value;
+        };
+      });
+      document.querySelector('#hashAlgorithmGroup .toggle-btn[data-value="bun"]').classList.add('selected');
+
+      // Mode cards
+      document.querySelectorAll('.mode-card').forEach(card => {
+        card.onclick = () => {
+          document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.mode = card.dataset.mode;
+          document.getElementById('sequentialSettings').style.display = state.mode === 'sequential' ? 'block' : 'none';
+        };
+      });
+    }
+
+    function toggleSelection(type, value, element) {
+      if (state[type] === value) {
+        // Toggle off - click same item to deselect
+        state[type] = null;
+        element.classList.remove('selected');
+      } else {
+        // Select new value
+        document.querySelectorAll(`[data-${type}]`).forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+        state[type] = value;
+      }
+    }
+
+    // Validation
+    function validateOptions() {
+      const errors = [];
+
+      if (!state.species && !state.rarity && !state.eye && !state.hat && state.shiny === 'any') {
+        errors.push('请至少选择一个筛选条件（物种/稀有度/眼睛/帽子/闪光）');
+      }
+
+      return errors;
+    }
+
+    // Run search
+    async function runSearch() {
+      const errors = validateOptions();
+      if (errors.length > 0) {
+        alert(errors.join('\n'));
+        return;
+      }
+
+      const runBtn = document.getElementById('runBtn');
+      const outputArea = document.getElementById('outputArea');
+      const limit = parseInt(document.getElementById('limitInput').value) || 5000000;
+      const count = parseInt(document.getElementById('countInput').value) || 1;
+      const bytes = parseInt(document.getElementById('bytesInput').value) || 32;
+      const mode = state.mode;
+      const hashAlgorithm = state.hashAlgorithm;
+      const prefix = document.getElementById('prefixInput').value || 'user-';
+      const start = parseInt(document.getElementById('startInput').value) || 0;
+
+      // Debug: log current state
+      console.log('Current state:', JSON.stringify(state));
+
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<div class="spinner"></div><span>搜索中...</span>';
+      outputArea.innerHTML = '<div class="output-line">开始搜索匹配条件...</div>';
+
+      const found = [];
+      const startTime = Date.now();
+
+      // Use setTimeout to prevent blocking UI
+      await new Promise(resolve => {
+        setTimeout(() => {
+          for (let i = 0; i < limit; i++) {
+            const userId = mode === 'sequential'
+              ? `${prefix}${start + i}`
+              : generateRandomId(bytes);
+
+            const bones = rollUserId(userId, hashAlgorithm);
+
+            if (!matches(bones)) continue;
+
+            found.push({ userId, bones, attempts: i + 1, hashAlgorithm });
+            if (found.length >= count) break;
+
+            // Update progress every 1000 iterations
+            if (i % 10000 === 0) {
+              outputArea.innerHTML = `<div class="output-line">已尝试 ${i.toLocaleString()} 次...</div>`;
+            }
+          }
+
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+          if (found.length === 0) {
+            outputArea.innerHTML = `<div class="output-line output-error">未找到匹配结果 (算法 ${getHashAlgorithmLabel(hashAlgorithm)}，已尝试 ${limit.toLocaleString()} 次，耗时 ${elapsed}s)</div>`;
+          } else {
+            let html = `<div class="output-line output-success">🎉 找到 ${found.length} 个匹配结果 (算法 ${getHashAlgorithmLabel(hashAlgorithm)}，耗时 ${elapsed}s)</div>`;
+            found.forEach((match, idx) => {
+              html += `
+                <div class="output-line">
+                  <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <strong>#${idx + 1}</strong>
+                    <span class="attempts-badge">${match.attempts.toLocaleString()} 次尝试</span>
+                    <button class="copy-btn" onclick="copyUserId('${match.userId}')">📋 复制</button>
+                  </div>
+                  <div><strong>UserId:</strong> <code>${match.userId}</code></div>
+                  <div><strong>Hash:</strong> ${getHashAlgorithmLabel(match.hashAlgorithm)}</div>
+                  <div><strong>Species:</strong> ${match.bones.species} ${SPECIES_EMOJI[match.bones.species]}</div>
+                  <div><strong>Rarity:</strong> ${match.bones.rarity}</div>
+                  <div><strong>Eye:</strong> ${match.bones.eye}</div>
+                  <div><strong>Hat:</strong> ${match.bones.hat}</div>
+                  <div><strong>Shiny:</strong> ${match.bones.shiny ? '✨ 是' : '否'}</div>
+                  <details style="margin-top: 0.5rem;">
+                    <summary style="cursor:pointer;color:var(--accent);">Stats</summary>
+                    <pre style="margin-top:0.5rem;padding:0.5rem;background:var(--bg-secondary);border-radius:8px;font-size:0.8rem;">${JSON.stringify(match.bones.stats, null, 2)}</pre>
+                  </details>
+                </div>
+              `;
+            });
+            outputArea.innerHTML = html;
+          }
+
+          runBtn.disabled = false;
+          runBtn.innerHTML = '<span>🚀</span><span>开始搜索</span>';
+          resolve();
+        }, 50);
+      });
+    }
+
+    function generateRandomId(bytes) {
+      if (globalThis.crypto?.getRandomValues) {
+        const data = new Uint8Array(bytes);
+        globalThis.crypto.getRandomValues(data);
+        return Array.from(data, byte => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      const chars = '0123456789abcdef';
+      let result = '';
+      for (let i = 0; i < bytes * 2; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return result;
+    }
+
+    // Bun-compatible Wyhash (mirrors Zig std.hash.Wyhash / Bun.hash.wyhash).
+    function mulberry32(seed) {
+      let a = seed >>> 0;
+      return function () {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function toUint64(value) {
+      return value & UINT64_MASK;
+    }
+
+    function readLittleEndian(bytes, offset, size) {
+      let result = 0n;
+      for (let i = 0; i < size; i++) {
+        result |= BigInt(bytes[offset + i]) << BigInt(i * 8);
+      }
+      return result;
+    }
+
+    function multiply64(a, b) {
+      const product = toUint64(a) * toUint64(b);
+      return [product & UINT64_MASK, (product >> 64n) & UINT64_MASK];
+    }
+
+    function mix64(a, b) {
+      const [lo, hi] = multiply64(a, b);
+      return toUint64(lo ^ hi);
+    }
+
+    function smallKey(bytes) {
+      const len = bytes.length;
+      if (len >= 4) {
+        const end = len - 4;
+        const quarter = (len >> 3) << 2;
+        return {
+          a: toUint64((readLittleEndian(bytes, 0, 4) << 32n) | readLittleEndian(bytes, quarter, 4)),
+          b: toUint64((readLittleEndian(bytes, end, 4) << 32n) | readLittleEndian(bytes, end - quarter, 4))
+        };
+      }
+
+      if (len > 0) {
+        return {
+          a: (BigInt(bytes[0]) << 16n) | (BigInt(bytes[len >> 1]) << 8n) | BigInt(bytes[len - 1]),
+          b: 0n
+        };
+      }
+
+      return { a: 0n, b: 0n };
+    }
+
+    function wyhash64(input, seed = 0n) {
+      const bytes = typeof input === 'string' ? textEncoder.encode(input) : input;
+      let state0 = toUint64(seed ^ mix64(seed ^ WYHASH_SECRET[0], WYHASH_SECRET[1]));
+      let state1 = state0;
+      let state2 = state0;
+      let a = 0n;
+      let b = 0n;
+
+      if (bytes.length <= 16) {
+        ({ a, b } = smallKey(bytes));
+      } else {
+        let i = 0;
+        if (bytes.length >= 48) {
+          while (i + 48 < bytes.length) {
+            state0 = mix64(readLittleEndian(bytes, i, 8) ^ WYHASH_SECRET[1], readLittleEndian(bytes, i + 8, 8) ^ state0);
+            state1 = mix64(readLittleEndian(bytes, i + 16, 8) ^ WYHASH_SECRET[2], readLittleEndian(bytes, i + 24, 8) ^ state1);
+            state2 = mix64(readLittleEndian(bytes, i + 32, 8) ^ WYHASH_SECRET[3], readLittleEndian(bytes, i + 40, 8) ^ state2);
+            i += 48;
+          }
+          state0 = toUint64(state0 ^ state1 ^ state2);
+        }
+
+        while (i + 16 < bytes.length) {
+          state0 = mix64(readLittleEndian(bytes, i, 8) ^ WYHASH_SECRET[1], readLittleEndian(bytes, i + 8, 8) ^ state0);
+          i += 16;
+        }
+
+        a = readLittleEndian(bytes, bytes.length - 16, 8);
+        b = readLittleEndian(bytes, bytes.length - 8, 8);
+      }
+
+      a = toUint64(a ^ WYHASH_SECRET[1]);
+      b = toUint64(b ^ state0);
+      const [lo, hi] = multiply64(a, b);
+      return mix64(toUint64(lo ^ WYHASH_SECRET[0] ^ BigInt(bytes.length)), toUint64(hi ^ WYHASH_SECRET[1]));
+    }
+
+    function hashStringBun(s) {
+      return Number(wyhash64(s) & 0xffffffffn);
+    }
+
+    function hashStringFnv(s) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function hashString(s, algorithm = 'bun') {
+      return algorithm === 'fnv' ? hashStringFnv(s) : hashStringBun(s);
+    }
+
+    function getHashAlgorithmLabel(algorithm) {
+      return algorithm === 'fnv' ? 'Legacy / FNV-1a' : 'Bun / Wyhash';
+    }
+
+    function verifyBunHashCompatibility() {
+      const failures = BUN_HASH_SELF_TESTS.filter(test => wyhash64(test.input, test.seed) !== test.expected);
+      if (failures.length > 0) {
+        console.warn('Bun hash self-test failed:', failures);
+      } else {
+        console.info('Bun hash self-test passed.');
+      }
+    }
+
+    function pick(rng, arr) {
+      return arr[Math.floor(rng() * arr.length)];
+    }
+
+    function rollRarity(rng) {
+      const total = Object.values(RARITY_WEIGHTS).reduce((a, b) => a + b, 0);
+      let roll = rng() * total;
+      for (const rarity of RARITIES) {
+        roll -= RARITY_WEIGHTS[rarity];
+        if (roll < 0) return rarity;
+      }
+      return 'common';
+    }
+
+    function rollStats(rng, rarity) {
+      const floor = { common: 5, uncommon: 15, rare: 25, epic: 35, legendary: 50 }[rarity];
+      let peak = pick(rng, STAT_NAMES);
+      let dump = pick(rng, STAT_NAMES);
+      while (dump === peak) dump = pick(rng, STAT_NAMES);
+
+      const stats = {};
+      for (const name of STAT_NAMES) {
+        if (name === peak) {
+          stats[name] = Math.min(100, floor + 50 + Math.floor(rng() * 30));
+        } else if (name === dump) {
+          stats[name] = Math.max(1, floor - 10 + Math.floor(rng() * 15));
+        } else {
+          stats[name] = floor + Math.floor(rng() * 40);
+        }
+      }
+      return stats;
+    }
+
+    function rollFrom(rng) {
+      const rarity = rollRarity(rng);
+      return {
+        rarity,
+        species: pick(rng, SPECIES),
+        eye: pick(rng, EYES),
+        hat: rarity === 'common' ? 'none' : pick(rng, HATS),
+        shiny: rng() < 0.01,
+        stats: rollStats(rng, rarity),
+      };
+    }
+
+    function rollUserId(userId, algorithm = state.hashAlgorithm) {
+      return rollFrom(mulberry32(hashString(userId + SALT, algorithm)));
+    }
+
+    function matches(bones) {
+      // Check species filter
+      if (state.species != null && bones.species !== state.species) {
+        return false;
+      }
+      // Check rarity filter - THIS IS THE KEY CHECK
+      if (state.rarity != null && bones.rarity !== state.rarity) {
+        return false;
+      }
+      // Check eye filter
+      if (state.eye != null && bones.eye !== state.eye) {
+        return false;
+      }
+      // Check hat filter
+      if (state.hat != null && bones.hat !== state.hat) {
+        return false;
+      }
+      // Check shiny filter
+      if (state.shiny !== 'any' && bones.shiny !== (state.shiny === 'true')) {
+        return false;
+      }
+      return true;
+    }
+
+    function clearOutput() {
+      document.getElementById('outputArea').innerHTML = '';
+    }
+
+    function copyUserId(userId) {
+      navigator.clipboard.writeText(userId).then(() => {
+        // Find the button that was clicked and show "已复制" feedback
+        const buttons = document.querySelectorAll('.copy-btn');
+        buttons.forEach(btn => {
+          if (btn.onclick.toString().includes(userId)) {
+            const originalText = btn.textContent;
+            btn.textContent = '✅ 已复制';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.classList.remove('copied');
+            }, 1500);
+          }
+        });
+      });
+    }
+
+    // Initialize
+    verifyBunHashCompatibility();
+    initUI();
+  </script>
+</body>
+</html>
