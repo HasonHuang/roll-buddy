@@ -9,79 +9,91 @@ class GlmFixTransformer {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let buffer = '';
-
-    // ✅ 修复1：将状态移至请求/流作用域，彻底杜绝并发串扰
+    
+    // ✅ 请求级状态隔离，杜绝并发串扰
     const blockTypeMap = new Map();
 
     const newStream = new ReadableStream({
       start: (controller) => {
+        // 抽取单行处理逻辑，保证流结束时的残留数据也能被正确处理
+        const processLine = (rawLine) => {
+          const trimmed = rawLine.trim();
+          
+          // 非 data: 行（如 SSE 注释或心跳），原样转发
+          if (!trimmed.startsWith('data: ')) {
+            controller.enqueue(encoder.encode(rawLine + '\n'));
+            return;
+          }
+
+          const payload = trimmed.slice(6).trim();
+          
+          // ✅ 拦截空 payload 和标准结束符
+          if (payload === '[DONE]' || payload === '') {
+            controller.enqueue(encoder.encode(trimmed + '\n'));
+            return;
+          }
+
+          try {
+            const event = JSON.parse(payload);
+            const index = event.index;
+            const eventType = event.type;
+
+            // ✅ 仅对携带有效数字 index 的 content_block 事件进行状态追踪
+            if (typeof index === 'number') {
+              if (eventType === 'content_block_start') {
+                const bType = event.content_block?.type;
+                if (bType) blockTypeMap.set(index, bType);
+              } 
+              else if (eventType === 'content_block_delta') {
+                const currentBlockType = blockTypeMap.get(index);
+                const deltaType = event.delta?.type;
+
+                // 核心修复：tool_use 块内严禁出现 text_delta
+                if (currentBlockType === 'tool_use' && deltaType === 'text_delta') {
+                  console.warn(`[GlmFixTransformer] 已过滤非法 text_delta: index=${index}`);
+                  return; // ✅ 直接丢弃，绝不转发给客户端
+                }
+              } 
+              else if (eventType === 'content_block_stop') {
+                blockTypeMap.delete(index);
+              }
+            }
+
+            // 校验通过，转发原始行
+            controller.enqueue(encoder.encode(trimmed + '\n'));
+          } catch (e) {
+            // ✅ JSON 解析失败说明是残损数据或心跳包，直接丢弃。
+            // 转发残损 JSON 是导致客户端报 "Unexpected end of JSON input" 的元凶。
+            console.warn(`[GlmFixTransformer] 丢弃无效 JSON: ${payload.substring(0, 60)}...`);
+          }
+        };
+
         const pump = () => {
           reader.read().then(({ done, value }) => {
             if (done) {
+              // ✅ 流关闭前，处理 buffer 中可能残留的最后一行（无换行符）
+              if (buffer.trim().length > 0) {
+                processLine(buffer);
+              }
               controller.close();
               return;
             }
 
             buffer += decoder.decode(value, { stream: true });
-            // ✅ 修复5：兼容 \r\n 和 \n
             const lines = buffer.split(/\r?\n/);
-            buffer = lines.pop() || '';
+            buffer = lines.pop() || ''; // 保留未完整的行到下一次
 
             for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (!trimmedLine.startsWith('data: ')) {
-                controller.enqueue(encoder.encode(line + '\n'));
-                continue;
-              }
-
-              const jsonStr = trimmedLine.slice(6);
-              if (jsonStr === '[DONE]') {
-                controller.enqueue(encoder.encode(line + '\n'));
-                continue;
-              }
-
-              try {
-                const event = JSON.parse(jsonStr);
-                const index = event.index;
-                const eventType = event.type;
-
-                // ✅ 修复2：仅对有效数字 index 进行状态追踪
-                if (typeof index === 'number') {
-                  if (eventType === 'content_block_start') {
-                    // ✅ 修复3：安全访问深层属性
-                    const bType = event.content_block?.type;
-                    if (bType) blockTypeMap.set(index, bType);
-                  } 
-                  else if (eventType === 'content_block_delta') {
-                    const currentBlockType = blockTypeMap.get(index);
-                    const deltaType = event.delta?.type;
-
-                    // 核心过滤：tool_use 块内严禁出现 text_delta
-                    if (currentBlockType === 'tool_use' && deltaType === 'text_delta') {
-                      console.warn(`[GlmFixTransformer] 已过滤非法 text_delta: index=${index}`);
-                      continue; // 跳过转发
-                    }
-                  } 
-                  else if (eventType === 'content_block_stop') {
-                    blockTypeMap.delete(index);
-                  }
-                }
-
-                // 转发合法事件
-                controller.enqueue(encoder.encode(line + '\n'));
-              } catch (e) {
-                // JSON 解析失败，原样转发保活
-                controller.enqueue(encoder.encode(line + '\n'));
-              }
+              processLine(line);
             }
-            pump(); // 继续读取下一块
+            pump();
           }).catch(err => controller.error(err));
         };
         pump();
       }
     });
 
-    // ✅ 修复4：清理会导致流截断的头部
+    // ✅ 清理定长头部，防止客户端因字节数不匹配提前断流
     const newHeaders = new Headers(response.headers);
     newHeaders.delete('Content-Length');
     newHeaders.delete('Content-Encoding');
